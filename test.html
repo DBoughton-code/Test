@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Comcast UG Approval Calculator</title>
+
+<!-- PWA / Mobile install -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- Manifest embedded via <script> -->
+<script type="application/manifest+json">
+{
+  "name": "UG Approval Calculator",
+  "short_name": "UG Calc",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f9f9f9",
+  "theme_color": "#0077cc",
+  "icons": [
+    { "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAVUlEQVRYR+3VwQkAIAwD0P7/n6MJG3g8kphv1VjDaAgAAAAAAAIArK0dK5G9K58fObhIILr8GjXymIru7mAk9zSuCCVbUiwShuz6DG+WjwDUAAAAAElFTkSuQmCC", "sizes":"192x192", "type":"image/png" },
+    { "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAo0lEQVR4nO3XsQkAIBADwVv7/n6PFBaP9sUI1AmGdJ8UuCBEAAAAAAAAC4Bv+O5jNfj7wBDp4iGQ3b14d9NwDiA1h0p6B+swJUj84nkHs1rHHzx2eo3Q1zuB1IQ1L0EVwDWUZ06bAVYAzlGdOmwEWAO5RnTpsBVgDOUZ06bAVYAzlGdOmwEWAO5RnTpsBVgDMXD/S7N9UjVgAAAABJRU5ErkJggg==", "sizes":"512x512", "type":"image/png" }
+  ]
+}
+</script>
+
+<style>
+:root {
+  --primary-color: #0077cc;
+  --header-bg: var(--primary-color);
+  --header-text: white;
+  --total-bg: #d3f9d8;
+  --warning-color: #ff4d4d;
+}
+body { font-family: Arial, sans-serif; margin: 1rem; background: #f9f9f9; color: #333; }
+h1 { text-align: center; color: var(--primary-color); font-size: 1.8rem; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 1rem; }
+th, td { padding: 0.75em; border: 1px solid #ccc; text-align: left; }
+th { background-color: var(--header-bg); color: var(--header-text); }
+input[type="number"] { width: 100%; padding: 0.5em; font-size: 1rem; }
+.total { font-weight: bold; background-color: var(--total-bg); transition: color 0.3s ease; }
+.over-limit { color: var(--warning-color); }
+@media (max-width: 600px) {
+  table, thead, tbody, th, td, tr { display: block; width: 100%; }
+  thead { display: none; }
+  tr { margin-bottom: 1rem; border: 1px solid #ccc; padding: 0.5rem; background: white; }
+  td { display: flex; justify-content: space-between; padding: 0.5rem; border: none; border-bottom: 1px solid #eee; }
+  td::before { content: attr(data-label); font-weight: bold; }
+  .total { background-color: var(--total-bg); font-size: 1.2rem; }
+}
+</style>
+</head>
+
+<body>
+<h1>Comcast UG Approval Calculator</h1>
+
+<table>
+<thead>
+<tr><th>Code</th><th>Description</th><th>Amount</th><th>Cost ($)</th></tr>
+</thead>
+<tbody id="calc-body"></tbody>
+<tfoot>
+<tr><td colspan="3" class="total">Total (If red approval needed):</td>
+<td class="total" id="totalCost">$0.00</td></tr>
+</tfoot>
+</table>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  const items = [
+    { code: "ug15", desc: "RG-6 CIC (per drop)", price: 64.35 },
+    { code: "ug16", desc: "RG-11CIC (per foot)", price: 0.33 },
+    { code: "ug28", desc: "Locate, clean, rod, snake existing conduit (per foot)", price: 0.18 },
+    { code: "ug3",  desc: "DRIVEWAY BORING (per foot)", price: 2.01 },
+    { code: "ug5",  desc: "PULL RG-6 OR RG-11 DROP IN EXISTING CONDUIT (per foot)", price: 0.11 },
+    { code: "ug72", desc: "HAND TRENCH-12\" OF COVER-INCLUDES RESTORATION (per foot)", price: 0.98 },
+    { code: "ug10", desc: "ASPHALT CUT & RESTORATION - PRIVATE DRIVES, PUBLIC ROADS (per foot)", price: 10.73 }
+  ];
+
+  const tbody = document.getElementById("calc-body");
+  const totalCell = document.getElementById("totalCost");
+
+  items.forEach((item, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td data-label="Code">${item.code}</td>
+      <td data-label="Description">${item.desc}</td>
+      <td data-label="Amount"><input type="number" min="0" step="any" id="amt-${index}" value="0"></td>
+      <td data-label="Cost ($)" id="cost-${index}">$0.00</td>
+    `;
+    tbody.appendChild(row);
+    document.getElementById(`amt-${index}`).addEventListener("input", calculateTotals);
+  });
+
+  function calculateTotals() {
+    let total = 0;
+    items.forEach((item, index) => {
+      const amount = parseFloat(document.getElementById(`amt-${index}`).value) || 0;
+      const cost = amount * item.price;
+      total += cost;
+      document.getElementById(`cost-${index}`).innerText = `$${cost.toFixed(2)}`;
+    });
+    totalCell.innerText = `$${total.toFixed(2)}`;
+    totalCell.classList.toggle("over-limit", total > 165);
+  }
+
+  // Initial calculation
+  calculateTotals();
+
+});
+</script>
+
+</body>
+</html>
